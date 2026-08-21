@@ -42,6 +42,51 @@ DEFAULT_MODEL = "saaras:v3"
 DEFAULT_LANGUAGE_CODE = "en-IN"
 DEFAULT_MOCK_QUERY = "what is photosynthesis"
 
+SARVAM_SUPPORTED_LANGUAGES: Dict[str, str] = {
+    "en": "en-IN",
+    "mr": "mr-IN",
+    "hi": "hi-IN",
+    "bn": "bn-IN",
+    "kn": "kn-IN",
+    "ml": "ml-IN",
+    "od": "od-IN",
+    "pa": "pa-IN",
+    "ta": "ta-IN",
+    "te": "te-IN",
+    "gu": "gu-IN",
+    "as": "as-IN",
+    "ur": "ur-IN",
+    "ne": "ne-IN",
+    "kok": "kok-IN",
+    "ks": "ks-IN",
+    "sd": "sd-IN",
+    "sa": "sa-IN",
+    "sat": "sat-IN",
+    "mni": "mni-IN",
+    "brx": "brx-IN",
+    "mai": "mai-IN",
+    "doi": "doi-IN",
+}
+
+
+def normalize_sarvam_language_code(lang: Optional[str]) -> Optional[str]:
+    """
+    Normalize 2-letter ISO code or BCP-47 tag to Sarvam-supported code.
+    Examples: 'en' -> 'en-IN', 'mr' -> 'mr-IN', 'hi' -> 'hi-IN'.
+    Returns 'unknown' or normalized BCP-47 string.
+    """
+    if not lang:
+        return "unknown"
+    cleaned = str(lang).strip().lower()
+    if cleaned in ("auto", "unknown", "none", "all", ""):
+        return "unknown"
+    if cleaned in SARVAM_SUPPORTED_LANGUAGES:
+        return SARVAM_SUPPORTED_LANGUAGES[cleaned]
+    if "-" in cleaned:
+        parts = cleaned.split("-")
+        return f"{parts[0].lower()}-{parts[1].upper()}"
+    return "unknown"
+
 MIME_TO_FILENAME: Dict[str, str] = {
     "audio/wav": "audio.wav",
     "audio/x-wav": "audio.wav",
@@ -110,12 +155,13 @@ async def _call_sarvam_api(
     files = {
         "file": (filename, audio_bytes, content_type),
     }
+    norm_lang = normalize_sarvam_language_code(language_code)
     data: Dict[str, str] = {
         "model": model,
         "with_diarization": "false",
     }
-    if language_code:
-        data["language_code"] = language_code
+    if norm_lang:
+        data["language_code"] = norm_lang
 
     response = await client.post(
         SARVAM_STT_ENDPOINT,
@@ -124,6 +170,16 @@ async def _call_sarvam_api(
         data=data,
         timeout=30.0,
     )
+    # If 400 bad request due to language code, retry once with language_code='unknown'
+    if response.status_code == 400 and norm_lang != "unknown":
+        data["language_code"] = "unknown"
+        response = await client.post(
+            SARVAM_STT_ENDPOINT,
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=30.0,
+        )
     response.raise_for_status()
     return response.json()
 

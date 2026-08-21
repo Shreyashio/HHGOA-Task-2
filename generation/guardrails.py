@@ -152,44 +152,34 @@ def check_input(query: str) -> GuardrailResult:
 def check_context(
     query: str,
     chunks: List[RetrievedChunk],
-    min_score_threshold: float = 0.005,  # RRF score threshold (typical RRF scores are ~0.01-0.05)
+    min_score_threshold: float = 0.005,
 ) -> GuardrailResult:
     """
-    Validate that retrieved context contains sufficient relevance before invoking the LLM.
-    Short-circuits to avoid LLM cost, latency, and hallucinations when no good data exists.
-
-    Args:
-        query: User query string.
-        chunks: Reranked candidate chunks.
-        min_score_threshold: Minimum acceptable top chunk relevance score.
-
-    Returns:
-        GuardrailResult — if passed=False, returns refusal without calling LLM.
+    Validate that retrieved context is available before invoking the LLM.
+    If chunks are empty or low relevance, we still ALLOW the LLM call —
+    the updated system prompt instructs the LLM to answer from general knowledge
+    with a [General Knowledge] prefix when context is insufficient.
     """
     if not chunks:
         log.info("guardrails.no_context_found", query=query[:50])
+        # Still pass — let LLM use general knowledge
         return GuardrailResult(
-            passed=False,
+            passed=True,
             reason=REASON_NO_CONTEXT,
-            message="I do not have enough information in the dataset to answer that question.",
-            confidence=0.0,
+            message=None,
+            confidence=0.5,
         )
 
-    # Check top chunk score
     top_chunk = chunks[0]
     if top_chunk.score < min_score_threshold:
         log.info(
-            "guardrails.low_relevance_shortcircuit",
+            "guardrails.low_relevance_passthrough",
             top_score=f"{top_chunk.score:.5f}",
             threshold=min_score_threshold,
             query=query[:50],
         )
-        return GuardrailResult(
-            passed=False,
-            reason=REASON_LOW_RELEVANCE,
-            message="I don't have enough relevant information in the provided context to answer that question.",
-            confidence=0.0,
-        )
+        # Still pass — LLM will fallback to general knowledge if needed
+        return GuardrailResult(passed=True, reason=REASON_LOW_RELEVANCE, message=None, confidence=0.5)
 
     return GuardrailResult(passed=True, reason=None, message=None)
 
@@ -213,15 +203,6 @@ def check_output(
     Returns:
         GuardrailResult with safe answer or hallucination rejection.
     """
-    if not result.supported:
-        return GuardrailResult(
-            passed=False,
-            reason=REASON_NO_CONTEXT,
-            message="I do not have enough information in the provided context to answer this question.",
-            answer=result.answer,
-            confidence=0.0,
-        )
-
     answer_text = result.answer.strip()
     if not answer_text:
         return GuardrailResult(
@@ -231,7 +212,6 @@ def check_output(
             confidence=0.0,
         )
 
-    # If the answer is an explicit "I don't know" / refusal message
     refusal_indicators = [
         "not enough information",
         "cannot answer",
@@ -239,8 +219,12 @@ def check_output(
         "context does not provide",
         "context does not mention",
         "provided context does not contain",
+        "माहिती उपलब्ध नाही",
+        "माहिती नाही",
     ]
-    if any(ind in answer_text.lower() for ind in refusal_indicators):
+    is_explicit_refusal = any(ind in answer_text.lower() for ind in refusal_indicators)
+
+    if is_explicit_refusal:
         return GuardrailResult(
             passed=False,
             reason=REASON_NO_CONTEXT,
@@ -249,19 +233,28 @@ def check_output(
             confidence=0.0,
         )
 
-    # ── Lexical & Entity Grounding Check ───────────────────────────────────────
+    # If the answer is from general knowledge (either tagged or supported=False with an answer)
+    if not result.supported or answer_text.lower().startswith("[general knowledge]"):
+        return GuardrailResult(
+            passed=True,
+            reason="general_knowledge",
+            answer=answer_text,
+            confidence=result.confidence or 0.9,
+        )
+
+    # ── Lexical & Entity Grounding Check for Context-Grounded Answers ───────────
     # Combine all context text into one corpus
     context_corpus = " ".join(c.text.lower() for c in context_chunks)
-    context_words = set(re.findall(r"\b[a-z0-9_-]{3,}\b", context_corpus))
+    # Match alphanumeric words across ASCII and Indic/Devanagari Unicode ranges
+    context_words = set(re.findall(r"[\w\u0900-\u097F]{2,}", context_corpus))
 
     # Extract substantive terms from generated answer
     answer_words = [
-        w for w in re.findall(r"\b[a-z0-9_-]{3,}\b", answer_text.lower())
+        w for w in re.findall(r"[\w\u0900-\u097F]{2,}", answer_text.lower())
         if w not in STOPWORDS
     ]
 
     if not answer_words:
-        # Short answer with only stop words or numbers
         return GuardrailResult(passed=True, reason=None, answer=answer_text, confidence=result.confidence)
 
     # Calculate proportion of answer keywords grounded in retrieved context
@@ -277,17 +270,17 @@ def check_output(
     )
 
     if grounding_ratio < min_grounding_overlap:
-        log.warning(
-            "guardrails.hallucination_detected",
+        # Fallback to general knowledge rather than blocking the user
+        log.info(
+            "guardrails.general_knowledge_fallback",
             grounding_ratio=f"{grounding_ratio:.2f}",
             answer_preview=answer_text[:80],
         )
         return GuardrailResult(
-            passed=False,
-            reason=REASON_HALLUCINATION,
-            message="Generated answer failed factual grounding verification against the retrieved context.",
-            answer=None,
-            confidence=0.0,
+            passed=True,
+            reason="general_knowledge",
+            answer=answer_text,
+            confidence=result.confidence or 0.85,
         )
 
     return GuardrailResult(

@@ -8,9 +8,9 @@ This covers local vector retrieval (ChromaDB + `all-MiniLM-L6-v2`) and BM25+RRF 
 
 | Pipeline Stage | Min | P50 (Median) | P70 | P90 | P100 (Max) | Mean | Sub-200ms Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Vector Retrieval (ChromaDB) | 16.2 ms | 22.9 ms | 26.2 ms | 36.4 ms | 64.5 ms | 25.3 ms | — |
-| BM25+RRF Reranking | 0.4 ms | 0.6 ms | 0.6 ms | 0.8 ms | 1.1 ms | 0.6 ms | — |
-| **Search Pipeline Total** | 16.6 ms | 23.5 ms | 26.8 ms | 37.0 ms | 64.9 ms | 25.9 ms | **PASSED (< 200ms)** |
+| Vector Retrieval (ChromaDB) | 15.8 ms | 17.8 ms | 18.6 ms | 22.0 ms | 54.8 ms | 19.5 ms | — |
+| BM25+RRF Reranking | 0.3 ms | 0.5 ms | 0.6 ms | 0.6 ms | 0.8 ms | 0.5 ms | — |
+| **Search Pipeline Total** | 16.3 ms | 18.3 ms | 19.2 ms | 22.5 ms | 55.1 ms | 20.0 ms | **PASSED (< 200ms)** |
 
 ## 2. Complete End-to-End Pipeline & Guardrails
 
@@ -18,13 +18,13 @@ Includes external API calls (Sarvam AI STT and Claude LLM generation) reported s
 
 | Stage | P50 (ms) | P70 (ms) | P90 (ms) | P100 (ms) | Mean (ms) | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Input Guardrails | 0.0 ms | 0.0 ms | 0.1 ms | 1.6 ms | 0.1 ms | Safety & Prompt Injection filter |
+| Input Guardrails | 0.0 ms | 0.0 ms | 0.0 ms | 1.7 ms | 0.1 ms | Safety & Prompt Injection filter |
 | Speech-to-Text | 0.0 ms | 0.0 ms | 0.0 ms | 0.0 ms | 0.0 ms | Sarvam AI (saaras:v3) / Network API |
-| Search Pipeline | 23.5 ms | 26.8 ms | 37.0 ms | 64.9 ms | 25.9 ms | Retrieval + BM25 Rerank |
+| Search Pipeline | 18.3 ms | 19.2 ms | 22.5 ms | 55.1 ms | 20.0 ms | Retrieval + BM25 Rerank |
 | Context Validation | 0.0 ms | 0.0 ms | 0.0 ms | 0.0 ms | 0.0 ms | Pre-LLM Relevance Check |
-| LLM Generation | 24.6 ms | 26.5 ms | 28.3 ms | 30.1 ms | 23.9 ms | Claude / Anthropic API |
-| Grounding Check | 0.1 ms | 0.1 ms | 0.2 ms | 0.2 ms | 0.1 ms | Post-Gen Hallucination Verifier |
-| **Total End-to-End** | 46.1 ms | 46.9 ms | 61.6 ms | 87.5 ms | 50.3 ms | **Complete user experience** |
+| LLM Generation | 27.2 ms | 27.8 ms | 28.5 ms | 31.5 ms | 25.8 ms | Claude / Anthropic API |
+| Grounding Check | 0.1 ms | 0.1 ms | 0.1 ms | 0.2 ms | 0.1 ms | Post-Gen Hallucination Verifier |
+| **Total End-to-End** | 46.1 ms | 46.6 ms | 49.1 ms | 81.9 ms | 46.2 ms | **Complete user experience** |
 
 ---
-*Report generated automatically on 2026-08-21 18:48:02 by `evaluation.benchmark`.*
+*Report generated automatically on 2026-08-21 19:26:24 by `evaluation.benchmark`.*

@@ -2,7 +2,7 @@
   "n_queries": 30,
   "strategy": "sentence",
   "target_search_budget_ms": 200.0,
-  "timestamp": 1787318282.1807268,
+  "timestamp": 1787320584.7450082,
   "stages": {
     "input_validation": {
       "n_samples": 30,
@@ -19,45 +19,45 @@
       "n_samples": 30,
       "min_ms": 0.03,
       "p50_ms": 0.04,
-      "p70_ms": 0.05,
-      "p90_ms": 0.06,
-      "p95_ms": 0.06,
-      "p100_ms": 1.55,
+      "p70_ms": 0.04,
+      "p90_ms": 0.04,
+      "p95_ms": 0.05,
+      "p100_ms": 1.75,
       "mean_ms": 0.09,
-      "std_ms": 0.27
+      "std_ms": 0.31
     },
     "retrieval": {
       "n_samples": 30,
-      "min_ms": 16.24,
-      "p50_ms": 22.91,
-      "p70_ms": 26.23,
-      "p90_ms": 36.43,
-      "p95_ms": 38.13,
-      "p100_ms": 64.47,
-      "mean_ms": 25.34,
-      "std_ms": 9.74
+      "min_ms": 15.81,
+      "p50_ms": 17.78,
+      "p70_ms": 18.63,
+      "p90_ms": 21.99,
+      "p95_ms": 23.2,
+      "p100_ms": 54.78,
+      "mean_ms": 19.48,
+      "std_ms": 6.77
     },
     "reranking": {
       "n_samples": 30,
-      "min_ms": 0.35,
-      "p50_ms": 0.57,
-      "p70_ms": 0.61,
-      "p90_ms": 0.79,
-      "p95_ms": 0.86,
-      "p100_ms": 1.1,
-      "mean_ms": 0.58,
-      "std_ms": 0.16
+      "min_ms": 0.34,
+      "p50_ms": 0.48,
+      "p70_ms": 0.57,
+      "p90_ms": 0.62,
+      "p95_ms": 0.66,
+      "p100_ms": 0.82,
+      "mean_ms": 0.5,
+      "std_ms": 0.11
     },
     "search_pipeline": {
       "n_samples": 30,
-      "min_ms": 16.6,
-      "p50_ms": 23.5,
-      "p70_ms": 26.83,
-      "p90_ms": 37.04,
-      "p95_ms": 38.88,
-      "p100_ms": 64.92,
-      "mean_ms": 25.92,
-      "std_ms": 9.76
+      "min_ms": 16.26,
+      "p50_ms": 18.28,
+      "p70_ms": 19.19,
+      "p90_ms": 22.54,
+      "p95_ms": 23.8,
+      "p100_ms": 55.12,
+      "mean_ms": 19.99,
+      "std_ms": 6.75
     },
     "context_validation": {
       "n_samples": 30,
@@ -83,36 +83,36 @@
     },
     "generation": {
       "n_samples": 30,
-      "min_ms": 15.75,
-      "p50_ms": 24.55,
-      "p70_ms": 26.53,
-      "p90_ms": 28.3,
-      "p95_ms": 29.0,
-      "p100_ms": 30.14,
-      "mean_ms": 23.89,
-      "std_ms": 3.66
+      "min_ms": 16.0,
+      "p50_ms": 27.16,
+      "p70_ms": 27.81,
+      "p90_ms": 28.49,
+      "p95_ms": 29.47,
+      "p100_ms": 31.53,
+      "mean_ms": 25.77,
+      "std_ms": 3.72
     },
     "grounding_check": {
       "n_samples": 30,
       "min_ms": 0.08,
-      "p50_ms": 0.12,
-      "p70_ms": 0.14,
-      "p90_ms": 0.18,
-      "p95_ms": 0.19,
-      "p100_ms": 0.22,
-      "mean_ms": 0.13,
-      "std_ms": 0.04
+      "p50_ms": 0.11,
+      "p70_ms": 0.13,
+      "p90_ms": 0.15,
+      "p95_ms": 0.15,
+      "p100_ms": 0.19,
+      "mean_ms": 0.11,
+      "std_ms": 0.03
     },
     "total_end_to_end": {
       "n_samples": 30,
-      "min_ms": 44.97,
-      "p50_ms": 46.09,
-      "p70_ms": 46.87,
-      "p90_ms": 61.56,
-      "p95_ms": 62.3,
-      "p100_ms": 87.52,
-      "mean_ms": 50.33,
-      "std_ms": 9.3
+      "min_ms": 33.84,
+      "p50_ms": 46.08,
+      "p70_ms": 46.61,
+      "p90_ms": 49.09,
+      "p95_ms": 49.48,
+      "p100_ms": 81.87,
+      "mean_ms": 46.21,
+      "std_ms": 7.69
     }
   },
   "per_query_results": [
@@ -121,8 +121,8 @@
       "query": "what is photosynthesis",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 64.91560011636466,
-      "total_ms": 87.5205000047572,
+      "search_pipeline_ms": 55.117800016887486,
+      "total_ms": 81.8718999507837,
       "sources_count": 1
     },
     {
@@ -130,8 +130,8 @@
       "query": "what is the function of phloem in plants",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 27.348100033123046,
-      "total_ms": 44.986599998082966,
+      "search_pipeline_ms": 19.809499906841666,
+      "total_ms": 45.97099998500198,
       "sources_count": 1
     },
     {
@@ -139,8 +139,8 @@
       "query": "causes of diabetes and how to prevent it",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 23.765999998431653,
-      "total_ms": 44.971900002565235,
+      "search_pipeline_ms": 19.174400018528104,
+      "total_ms": 46.428500034380704,
       "sources_count": 1
     },
     {
@@ -148,8 +148,8 @@
       "query": "who was the first president of India",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 21.1837999522686,
-      "total_ms": 47.36349999438971,
+      "search_pipeline_ms": 17.996199952904135,
+      "total_ms": 45.62490002717823,
       "sources_count": 1
     },
     {
@@ -157,8 +157,8 @@
       "query": "capital of France and famous monuments",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 24.01250001275912,
-      "total_ms": 45.39020004449412,
+      "search_pipeline_ms": 19.399799988605082,
+      "total_ms": 47.057899995706975,
       "sources_count": 1
     },
     {
@@ -166,8 +166,8 @@
       "query": "how does the human circulatory system work",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 34.677599964197725,
-      "total_ms": 61.96469999849796,
+      "search_pipeline_ms": 19.31559998774901,
+      "total_ms": 46.8686000094749,
       "sources_count": 1
     },
     {
@@ -175,8 +175,8 @@
       "query": "what is machine learning and neural networks",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 38.19469996960834,
-      "total_ms": 60.85720000555739,
+      "search_pipeline_ms": 18.78510002279654,
+      "total_ms": 46.238700044341385,
       "sources_count": 1
     },
     {
@@ -184,8 +184,8 @@
       "query": "what is the difference between RAM and ROM",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 28.84970000013709,
-      "total_ms": 45.25139997713268,
+      "search_pipeline_ms": 17.527599935419858,
+      "total_ms": 45.8961000549607,
       "sources_count": 1
     },
     {
@@ -193,8 +193,8 @@
       "query": "history and significance of the Taj Mahal",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 39.44429999683052,
-      "total_ms": 61.511200037784874,
+      "search_pipeline_ms": 17.572400043718517,
+      "total_ms": 46.194399998057634,
       "sources_count": 1
     },
     {
@@ -202,8 +202,8 @@
       "query": "what is the law of conservation of energy",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 23.809699981939048,
-      "total_ms": 44.96989998733625,
+      "search_pipeline_ms": 17.370700021274388,
+      "total_ms": 45.48490000888705,
       "sources_count": 1
     },
     {
@@ -211,8 +211,8 @@
       "query": "how do solar panels generate electricity",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 26.44510002573952,
-      "total_ms": 45.50439998274669,
+      "search_pipeline_ms": 18.15850002458319,
+      "total_ms": 45.20130000310019,
       "sources_count": 1
     },
     {
@@ -220,8 +220,8 @@
       "query": "symptoms and treatment of malaria",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 31.019299989566207,
-      "total_ms": 61.12959998426959,
+      "search_pipeline_ms": 18.104200018569827,
+      "total_ms": 45.770199969410896,
       "sources_count": 1
     },
     {
@@ -229,8 +229,8 @@
       "query": "what is the theory of general relativity",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 36.912200041115284,
-      "total_ms": 62.57869995897636,
+      "search_pipeline_ms": 17.248000018298626,
+      "total_ms": 45.600300014484674,
       "sources_count": 1
     },
     {
@@ -238,8 +238,8 @@
       "query": "who invented the World Wide Web",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 35.241899953689426,
-      "total_ms": 60.28649996733293,
+      "search_pipeline_ms": 19.048399990424514,
+      "total_ms": 44.38179999124259,
       "sources_count": 1
     },
     {
@@ -247,8 +247,8 @@
       "query": "what causes tides in the oceans",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 19.920999999158084,
-      "total_ms": 45.22929998347536,
+      "search_pipeline_ms": 17.268500057980418,
+      "total_ms": 33.842100005131215,
       "sources_count": 1
     },
     {
@@ -256,8 +256,8 @@
       "query": "what is DNA and how does it replicate",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 19.71580000827089,
-      "total_ms": 45.124700001906604,
+      "search_pipeline_ms": 16.256799979601055,
+      "total_ms": 38.90220000175759,
       "sources_count": 1
     },
     {
@@ -265,8 +265,8 @@
       "query": "what is the greenhouse effect and global warming",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 21.2710999767296,
-      "total_ms": 46.25740001210943,
+      "search_pipeline_ms": 17.313399992417544,
+      "total_ms": 49.20300003141165,
       "sources_count": 1
     },
     {
@@ -274,8 +274,8 @@
       "query": "how do airplanes generate lift",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 23.485900077503175,
-      "total_ms": 45.25359999388456,
+      "search_pipeline_ms": 17.58980000158772,
+      "total_ms": 45.662300020921975,
       "sources_count": 1
     },
     {
@@ -283,8 +283,8 @@
       "query": "what is the role of mitochondria in a cell",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 26.61280002212152,
-      "total_ms": 45.926199993118644,
+      "search_pipeline_ms": 19.24290001625195,
+      "total_ms": 49.710099992807955,
       "sources_count": 1
     },
     {
@@ -292,8 +292,8 @@
       "query": "what are the primary colors of light",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 23.515200009569526,
-      "total_ms": 46.42440000316128,
+      "search_pipeline_ms": 17.97059999080375,
+      "total_ms": 46.27629998140037,
       "sources_count": 1
     },
     {
@@ -301,8 +301,8 @@
       "query": "what is the speed of light in vacuum",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 19.140099990181625,
-      "total_ms": 46.1292999680154,
+      "search_pipeline_ms": 19.47269996162504,
+      "total_ms": 37.57619997486472,
       "sources_count": 1
     },
     {
@@ -310,8 +310,8 @@
       "query": "how does a transformer work in electrical circuits",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 21.855599945411086,
-      "total_ms": 46.795699978247285,
+      "search_pipeline_ms": 23.140900011640042,
+      "total_ms": 49.08070003148168,
       "sources_count": 1
     },
     {
@@ -319,8 +319,8 @@
       "query": "what is the capital of Japan",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 20.334299944806844,
-      "total_ms": 45.39819998899475,
+      "search_pipeline_ms": 22.47859997441992,
+      "total_ms": 47.340899996925145,
       "sources_count": 1
     },
     {
@@ -328,8 +328,8 @@
       "query": "who wrote the play Romeo and Juliet",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 18.874999950639904,
-      "total_ms": 46.493500005453825,
+      "search_pipeline_ms": 18.393300008028746,
+      "total_ms": 45.84719997365028,
       "sources_count": 1
     },
     {
@@ -337,8 +337,8 @@
       "query": "what is inflation in economics",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 17.925299995113164,
-      "total_ms": 45.66020000493154,
+      "search_pipeline_ms": 18.035000015515834,
+      "total_ms": 46.20550002437085,
       "sources_count": 1
     },
     {
@@ -346,8 +346,8 @@
       "query": "how does vaccination provide immunity",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 17.406499944627285,
-      "total_ms": 46.03500000666827,
+      "search_pipeline_ms": 17.97449996229261,
+      "total_ms": 39.34580000350252,
       "sources_count": 1
     },
     {
@@ -355,8 +355,8 @@
       "query": "what is an earthquake and what causes it",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 18.66089995019138,
-      "total_ms": 45.64790002768859,
+      "search_pipeline_ms": 19.149100116919726,
+      "total_ms": 48.185399966314435,
       "sources_count": 1
     },
     {
@@ -364,8 +364,8 @@
       "query": "what is the process of water purification",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 17.35699997516349,
-      "total_ms": 46.053199970629066,
+      "search_pipeline_ms": 24.332100001629442,
+      "total_ms": 48.93290001200512,
       "sources_count": 1
     },
     {
@@ -373,8 +373,8 @@
       "query": "who was Mahatma Gandhi and what was his role in independence",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 18.971099983900785,
-      "total_ms": 46.22220003511757,
+      "search_pipeline_ms": 18.63239996600896,
+      "total_ms": 35.03520000958815,
       "sources_count": 1
     },
     {
@@ -382,8 +382,8 @@
       "query": "what are the benefits of renewable energy",
       "status": "success",
       "guardrail_passed": true,
-      "search_pipeline_ms": 16.601899929810315,
-      "total_ms": 47.02920001000166,
+      "search_pipeline_ms": 17.69020000938326,
+      "total_ms": 46.497900038957596,
       "sources_count": 1
     }
   ]

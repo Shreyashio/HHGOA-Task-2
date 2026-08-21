@@ -21,11 +21,17 @@ Breakdown:
   Total          : ~10-35ms  ✓
 """
 
-from __future__ import annotations
-
+import sys
 import time
 from dataclasses import dataclass, field
 from typing import List, Optional
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 import structlog
 

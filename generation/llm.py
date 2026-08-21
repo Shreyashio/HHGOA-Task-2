@@ -37,23 +37,28 @@ from retrieval.retriever import RetrievedChunk
 log = structlog.get_logger()
 
 DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
-DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 
-SYSTEM_PROMPT = """You are a factual, concise question-answering assistant.
-Your task is to answer the user's question STRICTLY and ONLY using the provided retrieved context chunks.
+SYSTEM_PROMPT = """You are a factual, multilingual question-answering assistant for the MATRUBHASHA Voice-RAG system.
+You answer questions in Marathi, English, or Hindi based on the user's query language.
+
+You are given retrieved context chunks from the MSMARCO-XI dataset. Use them as your PRIMARY source.
 
 CRITICAL RULES:
-1. Grounding: Answer ONLY from facts explicitly stated in the context chunks. Do NOT extrapolate, speculate, or introduce external knowledge.
-2. Insufficient Context: If the provided context does NOT contain enough information to answer the question with certainty, answer: "I do not have enough information in the provided context to answer this question." and set supported to false.
-3. Citations: Indicate exactly which chunk index or indices (1-indexed, e.g. [1], [2]) directly support your answer in `used_chunk_indices`.
-4. Output Format: You MUST return a single valid JSON object with NO surrounding commentary or markdown format outside the JSON:
+1. PREFER context chunks: If the context chunks contain the answer, cite them and answer from them.
+2. GENERAL KNOWLEDGE FALLBACK: If the context chunks do NOT contain relevant information, answer from your own general knowledge — BUT set supported=false and prefix your answer with: "[General Knowledge] "
+3. NEVER refuse to answer a factual question — always give your best answer.
+4. Be concise and direct. No filler phrases like "Based on the context...".
+5. Match the language of the user's question (Marathi question → Marathi answer, English → English).
+6. Output Format: Return ONLY a valid JSON object, no markdown, no extra text:
 {
-  "answer": "<concise, factual answer grounded in context>",
+  "answer": "<concise factual answer>",
   "supported": true,
   "confidence": 0.95,
   "used_chunk_indices": [1, 2]
 }
+If answering from general knowledge, set supported=false and used_chunk_indices=[].
 """
 
 
@@ -184,27 +189,42 @@ async def _call_groq(
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    payload = {
-        "model": model,
-        "temperature": 0.0,
-        "response_format": {"type": "json_object"},
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    }
+    candidate_models = [model, "openai/gpt-oss-20b", "qwen/qwen3.6-27b", "allam-2-7b"]
+    # De-duplicate while preserving order
+    models_to_try = list(dict.fromkeys([m for m in candidate_models if m]))
+
     async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30.0,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        text = data["choices"][0]["message"]["content"]
-        tokens = data.get("usage", {}).get("total_tokens", 0)
-        return text, tokens
+        last_exc = None
+        for m in models_to_try:
+            payload = {
+                "model": m,
+                "temperature": 0.0,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            }
+            try:
+                resp = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=30.0,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                text = data["choices"][0]["message"]["content"]
+                tokens = data.get("usage", {}).get("total_tokens", 0)
+                return text, tokens
+            except httpx.HTTPStatusError as exc:
+                last_exc = exc
+                if exc.response.status_code == 404 or "model_not_found" in exc.response.text:
+                    log.warning("groq.model_fallback", model=m, error="model_not_found, trying next")
+                    continue
+                raise
+        if last_exc:
+            raise last_exc
 
 
 @retry(
@@ -300,7 +320,12 @@ async def generate(
         ValueError: If context_chunks is empty.
     """
     if not context_chunks:
-        raise ValueError("context_chunks cannot be empty (at least 1 chunk required for generation)")
+        # No context — tell the LLM to use general knowledge
+        context_text = "[No relevant chunks found in dataset for this query.]"
+    else:
+        context_text = format_context_prompt(context_chunks)
+
+    user_prompt = f"Retrieved Context:\n{context_text}\n\nQuestion: {query}\n\nProvide your JSON answer:"
 
     # ── Determine Provider & Key ───────────────────────────────────────────────
     chosen_provider = (provider or settings.LLM_PROVIDER or "").lower().strip()
@@ -308,7 +333,6 @@ async def generate(
     groq_key = (settings.GROQ_API_KEY or os.environ.get("GROQ_API_KEY", "")).strip()
     openai_key = (settings.OPENAI_API_KEY or os.environ.get("OPENAI_API_KEY", "")).strip()
 
-    # Auto-select provider if key is available
     if not chosen_provider or chosen_provider in ("anthropic", "claude"):
         if anthropic_key and not anthropic_key.startswith("your_"):
             chosen_provider = "anthropic"
@@ -326,10 +350,6 @@ async def generate(
         is_placeholder_key = not groq_key or groq_key.startswith("your_") or groq_key in ("mock", "none")
     elif chosen_provider == "openai":
         is_placeholder_key = not openai_key or openai_key.startswith("your_") or openai_key in ("mock", "none")
-
-    # ── Build Prompts ──────────────────────────────────────────────────────────
-    context_text = format_context_prompt(context_chunks)
-    user_prompt = f"Retrieved Context:\n{context_text}\n\nQuestion: {query}\n\nProvide your JSON answer:"
 
     raw_response = ""
     tokens_used = 0
