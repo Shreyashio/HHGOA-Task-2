@@ -18,7 +18,6 @@ datasets==2.20.0
 
 # NLP / chunking helpers
 nltk==3.8.1
-spacy==3.7.5
 tiktoken==0.7.0
 
 # LLM
