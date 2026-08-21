@@ -12,7 +12,7 @@ function App() {
   const [backendOnline, setBackendOnline] = useState(false);
   const [mockMode, setMockMode] = useState(false);
   const [strategy, setStrategy] = useState('sentence');
-  const [selectedLang, setSelectedLang] = useState('en-IN'); // Defaults to English ('en-IN'), options: 'en-IN', 'mr-IN', 'hi-IN'
+  const [selectedLang, setSelectedLang] = useState('en-IN');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStage, setCurrentStage] = useState(null);
@@ -21,7 +21,6 @@ function App() {
   const [isVoice, setIsVoice] = useState(false);
   const [lastAction, setLastAction] = useState(null);
 
-  // Check backend health periodically
   const probeHealth = useCallback(async () => {
     const res = await checkBackendHealth();
     setBackendOnline(res.online);
@@ -33,7 +32,6 @@ function App() {
     return () => clearInterval(interval);
   }, [probeHealth]);
 
-  // Voice recording handler
   const handleAudioRecorded = async (audioBlob) => {
     setIsProcessing(true);
     setCurrentStage('stt');
@@ -54,14 +52,13 @@ function App() {
       setCurrentStage(null);
     } catch (err) {
       console.error("Voice query failed:", err);
-      setError(err.message || 'Voice query failed. Check backend connection or API keys.');
+      setError(err.message || 'Voice query failed. Please check connection or retry.');
       setCurrentStage(null);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Text search handler
   const handleSendText = async (textQuery) => {
     setIsProcessing(true);
     setCurrentStage('retrieve');
@@ -82,7 +79,7 @@ function App() {
       setCurrentStage(null);
     } catch (err) {
       console.error("Text query failed:", err);
-      setError(err.message || 'Text query failed. Check backend connection.');
+      setError(err.message || 'Text query failed. Please check connection.');
       setCurrentStage(null);
     } finally {
       setIsProcessing(false);
@@ -99,66 +96,42 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-hhg-bg text-hhg-sand">
-      {/* ── 1. HEADER (मातृभाषा wordmark + unobtrusive language selector + status) ── */}
+    <div className="min-h-screen flex flex-col bg-[#0B0E11] text-[#F5F0E6]">
+      {/* ── 1. HEADER (Only wordmark + clean language selector) ────────────────── */}
       <Header
-        backendOnline={backendOnline}
-        mockMode={mockMode}
-        setMockMode={setMockMode}
-        strategy={strategy}
-        setStrategy={setStrategy}
         selectedLang={selectedLang}
         setSelectedLang={setSelectedLang}
       />
 
-      {/* ── MAIN CONTENT CONTAINER ──────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-6 sm:py-8 flex flex-col items-center">
-        {/* Hero Section */}
-        <div className="text-center max-w-2xl mx-auto mb-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-hhg-surface border border-hhg-border text-hhg-teal text-xs font-mono font-medium tracking-wide mb-3">
-            <span className="w-2 h-2 rounded-full bg-hhg-teal animate-pulse" />
-            <span>Hacker House Goa 2026</span>
-            <span className="text-hhg-sand-dim">&bull;</span>
-            <span className="text-hhg-coral">Task #2</span>
-          </div>
-
-          <h2 className="font-marathi text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-hhg-sand">
-            <span className="hhg-coral-gradient">मातृभाषा</span>
+      {/* ── MAIN CONTENT (Tighter, denser spacing) ──────────────────────────────── */}
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 pt-5 pb-8 flex flex-col items-center">
+        {/* Hero Section (Clean serif title, tight copy, zero badges) */}
+        <div className="text-center mb-4">
+          <h2 className="font-marathi text-3xl sm:text-4xl font-bold tracking-tight text-[#F5F0E6]">
+            मातृभाषा
           </h2>
-
-          <p className="mt-2 text-xs sm:text-sm text-hhg-sand-muted max-w-lg mx-auto leading-relaxed">
-            Voice-first grounded question answering on{' '}
-            <strong className="text-hhg-sand font-mono">MSMARCO-XI</strong> with{' '}
-            <strong className="text-emerald-400 font-mono">&lt;200ms search latency</strong>.
+          <p className="mt-1 text-xs sm:text-sm text-[#8A8F94] max-w-md mx-auto">
+            Sub-200ms grounded question answering on MSMARCO-XI.
           </p>
         </div>
 
-        {/* ── 2. CENTRAL MIC BUTTON + 3. TEXT INPUT FALLBACK ──────────────────────── */}
-        <div className="w-full hhg-card p-4 sm:p-6 border-hhg-border my-2 relative">
+        {/* ── 2. CENTRAL INTERACTION CARD (Mic + Natural Secondary Text Bar) ──────── */}
+        <div className="w-full surface-card p-4 sm:p-5 flex flex-col items-center">
+          {/* Breathing single-ring mic */}
           <WarliMic
             onAudioRecorded={handleAudioRecorded}
             isProcessing={isProcessing}
             disabled={!backendOnline && !mockMode}
           />
 
-          {/* Divider */}
-          <div className="relative my-4 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-hhg-border" />
-            </div>
-            <span className="relative px-3 bg-hhg-card text-[11px] font-mono uppercase tracking-wider text-hhg-sand-muted font-medium">
-              Or Enter Text
-            </span>
-          </div>
-
-          {/* Text Input Fallback */}
+          {/* Natural secondary text input (no divider line) */}
           <TextFallback
             onSendText={handleSendText}
             isProcessing={isProcessing}
           />
         </div>
 
-        {/* Error Notification */}
+        {/* Error notification if any */}
         {error && (
           <ErrorBanner
             error={error}
@@ -170,7 +143,7 @@ function App() {
           />
         )}
 
-        {/* ── 4. COMBINED QUESTION + ANSWER CARD (Single Bordered Unit) ────────────── */}
+        {/* ── 3. QUESTION + ANSWER CARD (Single Bordered Physical Frame) ──────────── */}
         {result && (
           <QAUnifiedCard
             result={result}
@@ -178,7 +151,7 @@ function App() {
           />
         )}
 
-        {/* ── 5. FOOTER PIPELINE STRIP (Moved from top, compact & quiet) ───────────── */}
+        {/* ── 4. QUIET FOOTER PIPELINE STRIP ──────────────────────────────────────── */}
         <PipelineStrip
           currentStage={currentStage}
           latencyData={result?.latency}
@@ -186,15 +159,55 @@ function App() {
         />
       </main>
 
-      {/* ── BOTTOM FOOTER ───────────────────────────────────────────────────────── */}
-      <footer className="w-full border-t border-hhg-border py-4 text-center text-xs text-hhg-sand-dim font-mono">
-        <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>
-            <span className="font-marathi text-sm text-hhg-sand font-bold">मातृभाषा</span> &bull; Hacker House Goa 2026
-          </p>
-          <p className="text-[11px] text-hhg-sand-muted">
-            Sarvam AI STT &bull; ChromaDB Vector &bull; BM25 RRF &bull; Groq Llama 3
-          </p>
+      {/* ── 5. SINGLE QUIET MONOSPACE DEBUG STRIP AT PAGE BOTTOM ─────────────────── */}
+      <footer className="w-full border-t border-white/[0.05] py-3 text-[11px] font-mono text-[#8A8F94]">
+        <div className="max-w-3xl mx-auto px-4 flex flex-wrap items-center justify-between gap-y-2 gap-x-4">
+          {/* System status & dev parameters in ONE unified line */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* The ONLY teal accent on the entire page: system status dot */}
+            <span className="flex items-center gap-1.5">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  backendOnline ? 'bg-[#1DBFA3]' : 'bg-amber-500'
+                }`}
+              />
+              <span className={backendOnline ? 'text-[#F5F0E6]' : 'text-amber-400'}>
+                {backendOnline ? 'api: online (:8000)' : 'api: offline'}
+              </span>
+            </span>
+
+            <span>&bull;</span>
+
+            {/* Inline Strategy Select */}
+            <span className="flex items-center gap-1">
+              <span>strategy:</span>
+              <select
+                value={strategy}
+                onChange={(e) => setStrategy(e.target.value)}
+                className="bg-transparent text-[#F5F0E6] hover:underline cursor-pointer outline-none font-mono"
+              >
+                <option value="sentence" className="bg-[#12161B] text-[#F5F0E6]">sentence</option>
+                <option value="fixed" className="bg-[#12161B] text-[#F5F0E6]">fixed (256-tok)</option>
+                <option value="metadata" className="bg-[#12161B] text-[#F5F0E6]">metadata-rich</option>
+              </select>
+            </span>
+
+            <span>&bull;</span>
+
+            {/* Inline Mock Toggle */}
+            <button
+              type="button"
+              onClick={() => setMockMode(!mockMode)}
+              className="hover:text-[#F5F0E6] transition-colors"
+            >
+              mock: <span className={mockMode ? 'text-[#FFB347]' : 'text-[#8A8F94]'}>{mockMode ? 'on' : 'off'}</span>
+            </button>
+          </div>
+
+          {/* Minimal Event attribution */}
+          <div className="text-[#8A8F94]/70">
+            Hacker House Goa 2026
+          </div>
         </div>
       </footer>
     </div>

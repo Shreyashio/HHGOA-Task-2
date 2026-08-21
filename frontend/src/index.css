@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Tiro+Devanagari+Marathi:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Tiro+Devanagari+Marathi:ital@0;1&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,86 +10,94 @@
   }
 
   body {
-    @apply bg-hhg-bg text-hhg-sand font-sans antialiased min-h-screen selection:bg-hhg-coral selection:text-hhg-sand;
+    @apply bg-[#0B0E11] text-[#F5F0E6] font-sans antialiased min-h-screen selection:bg-[#FF6B35] selection:text-[#F5F0E6];
     background-color: #0B0E11;
     background-image: 
-      radial-gradient(circle at 50% 0%, rgba(255, 107, 53, 0.08) 0%, transparent 55%),
-      radial-gradient(circle at 10% 90%, rgba(29, 191, 163, 0.06) 0%, transparent 45%),
-      radial-gradient(circle at 90% 80%, rgba(255, 179, 71, 0.05) 0%, transparent 45%);
+      radial-gradient(ellipse at 50% -10%, rgba(255, 107, 53, 0.07) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 110%, rgba(11, 14, 17, 0.9) 0%, #07090C 100%);
     background-attachment: fixed;
   }
 }
 
 @layer components {
-  /* HH Goa Coral / Teal Gradients */
-  .hhg-coral-gradient {
-    background: linear-gradient(135deg, #FFB347 0%, #FF6B35 50%, #FF8254 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  /* Subtle physical surface styling with 1px top-highlight border */
+  .surface-card {
+    @apply bg-[#12161B]/90 rounded-2xl transition-all duration-200;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 
+      0 4px 20px -2px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   }
 
-  .hhg-teal-gradient {
-    background: linear-gradient(135deg, #5CEAD1 0%, #1DBFA3 50%, #148C77 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .surface-card-subtle {
+    @apply bg-[#161B22]/70 rounded-xl transition-all duration-150;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
   }
 
-  .hhg-card {
-    @apply bg-hhg-card/95 border border-hhg-border backdrop-blur-md rounded-2xl shadow-xl transition-all duration-300;
-  }
-
-  .hhg-card-glow {
-    @apply hhg-card hover:border-hhg-coral/40 hover:shadow-[0_0_24px_rgba(255,107,53,0.12)];
-  }
-
-  .hhg-button {
-    @apply px-4 py-2 rounded-xl font-medium transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .hhg-button-primary {
-    @apply hhg-button bg-hhg-coral hover:bg-hhg-coral-hover text-hhg-sand font-semibold shadow-lg shadow-hhg-coral/25 border border-hhg-coral-light/30;
-  }
-
-  .hhg-button-teal {
-    @apply hhg-button bg-hhg-teal hover:bg-hhg-teal-hover text-[#0B0E11] font-semibold shadow-lg shadow-hhg-teal/20 border border-hhg-teal-light/40;
-  }
-
-  .hhg-button-secondary {
-    @apply hhg-button bg-hhg-surface hover:bg-hhg-cardHover text-hhg-sand-muted hover:text-hhg-sand border border-hhg-border;
+  .surface-card-interactive {
+    @apply surface-card hover:border-[#FF6B35]/30;
   }
 }
 
-/* Custom scrollbars */
+/* Organic breathing pulse animations for single mic glow ring */
+@keyframes breathe-idle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.55;
+  }
+}
+
+@keyframes breathe-recording {
+  0%, 100% {
+    transform: scale(1.02);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.22);
+    opacity: 0.85;
+  }
+}
+
+.animate-breathe {
+  animation: breathe-idle 3.6s ease-in-out infinite;
+}
+
+.animate-breathe-active {
+  animation: breathe-recording 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Subtle sound waves */
+@keyframes quiet-wave {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
+
+.animate-qwave-1 { animation: quiet-wave 1.1s ease-in-out infinite; }
+.animate-qwave-2 { animation: quiet-wave 0.8s ease-in-out 0.2s infinite; }
+.animate-qwave-3 { animation: quiet-wave 1.3s ease-in-out 0.4s infinite; }
+.animate-qwave-4 { animation: quiet-wave 0.9s ease-in-out 0.1s infinite; }
+.animate-qwave-5 { animation: quiet-wave 1.2s ease-in-out 0.3s infinite; }
+
+/* Custom clean scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0E11;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222933;
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #FF6B35;
+  background: rgba(255, 107, 53, 0.4);
 }
-
-/* Audio wave bar animation */
-@keyframes soundwave {
-  0%, 100% {
-    height: 4px;
-  }
-  50% {
-    height: 28px;
-  }
-}
-
-.animate-wave-1 { animation: soundwave 1.1s ease-in-out infinite; }
-.animate-wave-2 { animation: soundwave 0.8s ease-in-out 0.2s infinite; }
-.animate-wave-3 { animation: soundwave 1.4s ease-in-out 0.4s infinite; }
-.animate-wave-4 { animation: soundwave 0.9s ease-in-out 0.1s infinite; }
-.animate-wave-5 { animation: soundwave 1.2s ease-in-out 0.3s infinite; }
