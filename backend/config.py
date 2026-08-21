@@ -22,10 +22,11 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: str = ""
 
     # LLM
+    ANTHROPIC_API_KEY: str = ""
     GROQ_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
-    LLM_PROVIDER: str = "groq"
-    LLM_MODEL: str = "llama-3.1-8b-instant"
+    LLM_PROVIDER: str = "anthropic"
+    LLM_MODEL: str = "claude-3-5-sonnet-20241022"
 
     # Vector DB
     CHROMA_PERSIST_DIR: str = "./chroma_db"

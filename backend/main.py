@@ -5,17 +5,20 @@ FastAPI application entry point.
 
 Wires together:
   - CORS middleware
-  - Health-check endpoint
-  - Route inclusion from api/server.py (voice-RAG pipeline routes)
+  - Health-check endpoint (/health)
+  - Pipeline routes from api/server.py (/ask-voice, /ask-text, /chunking/strategies, /stats)
   - Startup/shutdown lifecycle (loads vector store, warms embeddings)
 """
 
+from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import structlog
 
+from api.server import router as pipeline_router
 from backend.config import settings
+from retrieval.retriever import warm_up
 
 log = structlog.get_logger()
 
@@ -24,10 +27,11 @@ log = structlog.get_logger()
 async def lifespan(app: FastAPI):
     """Startup: warm the embedding model and open the Chroma collection."""
     log.info("startup", msg="Server starting up...")
-    # warm_up() will be enabled in Step 3 once retriever is implemented.
-    # from retrieval.retriever import warm_up
-    # warm_up()
-    log.info("startup", msg="Ready.")
+    try:
+        warm_up()
+        log.info("startup", msg="Retriever and embedding model ready.")
+    except Exception as e:
+        log.warning("startup.warmup_deferred", error=str(e))
     yield
     log.info("shutdown", msg="Cleaning up resources.")
 
@@ -54,6 +58,5 @@ async def health():
     return {"status": "ok", "version": app.version}
 
 
-# ── Import pipeline routes (added in later steps) ──────────────────
-# from api.server import router as pipeline_router
-# app.include_router(pipeline_router, prefix="/api/v1")
+# ── Include Pipeline Routes ──────────────────────────────────────────
+app.include_router(pipeline_router)
