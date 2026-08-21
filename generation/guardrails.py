@@ -1,81 +1,298 @@
 """
 generation/guardrails.py
 ─────────────────────────
-Pre- and post-generation safety and quality checks.
+Pre- and post-generation safety, quality, relevance, and grounding checks.
 
-What this will do (Step 5):
+Guardrail Categories:
+  1. PRE-GENERATION INPUT CHECKS:
+     - Unsafe / inappropriate input detection (harmful content, prompt injections, toxic patterns)
+     - Off-topic detection (completely irrelevant domains / prompt jailbreaks)
 
-PRE-GENERATION checks (run before calling the LLM):
-  1. Off-topic detection
-     - Embeds the query and computes cosine similarity to a set of known
-       "in-topic" seed phrases derived from MSMARCO-XI subject matter
-     - If similarity < threshold → refuse with REASON_OFF_TOPIC
-  2. Unsafe / inappropriate input detection
-     - Keyword blocklist + simple pattern matching for hate speech, PII requests,
-       prompt injection patterns ("ignore previous instructions", etc.)
-     - If triggered → refuse with REASON_UNSAFE_INPUT
+  2. PRE-LLM CONTEXT VALIDATION:
+     - Relevance threshold check (if similarity/relevance scores are too low, short-circuit before LLM)
+     - Empty context detection
 
-POST-GENERATION checks (run on the LLM's GenerationResult):
-  3. No-context refusal
-     - If GenerationResult.supported == False → refuse with REASON_NO_CONTEXT
-  4. Hallucination check (lightweight)
-     - For each sentence in the answer, check if at least one key noun-phrase
-       appears verbatim or by fuzzy match in the retrieved chunks
-     - If fewer than 50% of sentences are grounded → refuse with REASON_HALLUCINATION
-     - This is intentionally conservative for a hackathon timeline
-
-Output:
-  GuardrailResult { passed: bool, reason: str | None, answer: str | None }
-  - If passed=True, `answer` is the safe string to return to the user
-  - If passed=False, `answer` is None and `reason` explains why
+  3. POST-GENERATION OUTPUT CHECKS:
+     - Grounding verification (ensures answer is supported by retrieved chunks, not hallucinated)
+     - Model self-reported refusal detection (supported=False)
 """
 
 from __future__ import annotations
+
+import re
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional, Set
+
+import structlog
 from generation.llm import GenerationResult
 from retrieval.retriever import RetrievedChunk
 
+log = structlog.get_logger()
 
+# ── Reason Constants ──────────────────────────────────────────────────────────
 REASON_OFF_TOPIC = "off_topic"
 REASON_UNSAFE_INPUT = "unsafe_input"
 REASON_NO_CONTEXT = "no_context"
+REASON_LOW_RELEVANCE = "low_relevance"
 REASON_HALLUCINATION = "hallucination"
+
+# ── Blocklists & Patterns ─────────────────────────────────────────────────────
+PROMPT_INJECTION_PATTERNS = [
+    r"ignore\s+(all\s+)?(previous|prior)\s+instructions",
+    r"disregard\s+(all\s+)?(previous|prior)\s+instructions",
+    r"system\s+prompt\s+override",
+    r"you\s+are\s+now\s+in\s+dan\s+mode",
+    r"jailbreak",
+    r"bypass\s+all\s+(filters|rules|safeguards)",
+    r"reveal\s+(the|your)\s+(system\s+prompt|instructions|secret\s+key|api\s+key)",
+    r"print\s+your\s+hidden\s+prompt",
+    r"base64\s+decode\s+and\s+execute",
+]
+
+UNSAFE_KEYWORD_PATTERNS = [
+    r"\bhow\s+to\s+build\s+a\s+(bomb|explosive|weapon)\b",
+    r"\bhow\s+to\s+(hack|ddos|exploit)\s+into\b",
+    r"\bsteal\s+(passwords|credit\s+cards|credentials)\b",
+    r"\bgenerate\s+malware\b",
+    r"\b(credit\s*card\s*number|cvv\s*code|ssn\s*number)\b",
+]
+
+OFF_TOPIC_PATTERNS = [
+    r"^(write|generate|compose)\s+(a\s+poem|a\s+song|a\s+rap|fiction|a\s+story|fanfic)\b",
+    r"^(roleplay|pretend\s+you\s+are)\b",
+    r"^[a-z]{1,3}$",                         # single letters / tiny nonsense
+    r"^(asdf|qwerty|zxcv|123456)+$",         # pure keyboard mashing
+]
+
+STOPWORDS: Set[str] = {
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "with",
+    "by", "about", "against", "between", "into", "through", "during", "before",
+    "after", "above", "below", "from", "up", "down", "in", "out", "over", "under",
+    "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do",
+    "does", "did", "can", "could", "shall", "should", "will", "would", "may",
+    "might", "must", "it", "its", "they", "them", "their", "this", "that", "these",
+    "those", "what", "which", "who", "whom", "whose", "where", "when", "why", "how",
+    "all", "any", "both", "each", "few", "more", "most", "other", "some", "such",
+    "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very",
+    "based", "context", "provided", "according",
+}
 
 
 @dataclass
 class GuardrailResult:
-    """Output of the guardrail layer."""
+    """Output of the guardrail evaluation."""
     passed: bool
-    reason: str | None = None          # one of the REASON_* constants, or None
-    answer: str | None = None          # populated only if passed=True
+    reason: Optional[str] = None          # One of REASON_* or None
+    message: Optional[str] = None         # Human-readable explanation / safe refusal
+    answer: Optional[str] = None          # Populated safe answer string if passed
+    confidence: float = 1.0
 
+
+# ─── 1. Pre-Generation Input Guardrail ────────────────────────────────────────
 
 def check_input(query: str) -> GuardrailResult:
     """
-    Pre-generation guardrails on the raw user query.
+    Validate raw user query for safety, prompt injection, and topic relevance.
 
     Args:
-        query: transcribed text from STT
+        query: Transcribed or typed query string.
 
     Returns:
-        GuardrailResult — if passed=False, the pipeline short-circuits here.
+        GuardrailResult — if passed=False, pipeline short-circuits before retrieval.
     """
-    raise NotImplementedError("Implemented in Step 5")
+    clean_q = query.strip()
+    if not clean_q:
+        return GuardrailResult(
+            passed=False,
+            reason=REASON_UNSAFE_INPUT,
+            message="Query cannot be empty.",
+            confidence=0.0,
+        )
 
+    q_lower = clean_q.lower()
+
+    # ── Check Prompt Injection ───────────────────────────────────────────────
+    for pat in PROMPT_INJECTION_PATTERNS:
+        if re.search(pat, q_lower, re.IGNORECASE):
+            log.warning("guardrails.prompt_injection_blocked", pattern=pat, query=clean_q[:50])
+            return GuardrailResult(
+                passed=False,
+                reason=REASON_UNSAFE_INPUT,
+                message="I cannot process this request because it violates safety and prompt integrity guidelines.",
+                confidence=0.0,
+            )
+
+    # ── Check Unsafe / Harmful Content ────────────────────────────────────────
+    for pat in UNSAFE_KEYWORD_PATTERNS:
+        if re.search(pat, q_lower, re.IGNORECASE):
+            log.warning("guardrails.unsafe_content_blocked", pattern=pat, query=clean_q[:50])
+            return GuardrailResult(
+                passed=False,
+                reason=REASON_UNSAFE_INPUT,
+                message="I cannot assist with dangerous, harmful, or unauthorized requests.",
+                confidence=0.0,
+            )
+
+    # ── Check Off-Topic / Nonsense ────────────────────────────────────────────
+    for pat in OFF_TOPIC_PATTERNS:
+        if re.search(pat, q_lower, re.IGNORECASE):
+            log.info("guardrails.off_topic_detected", pattern=pat, query=clean_q[:50])
+            return GuardrailResult(
+                passed=False,
+                reason=REASON_OFF_TOPIC,
+                message="This question appears to be outside the supported factual question-answering domain.",
+                confidence=0.0,
+            )
+
+    return GuardrailResult(passed=True, reason=None, message=None)
+
+
+# ─── 2. Pre-LLM Context Validation ────────────────────────────────────────────
+
+def check_context(
+    query: str,
+    chunks: List[RetrievedChunk],
+    min_score_threshold: float = 0.005,  # RRF score threshold (typical RRF scores are ~0.01-0.05)
+) -> GuardrailResult:
+    """
+    Validate that retrieved context contains sufficient relevance before invoking the LLM.
+    Short-circuits to avoid LLM cost, latency, and hallucinations when no good data exists.
+
+    Args:
+        query: User query string.
+        chunks: Reranked candidate chunks.
+        min_score_threshold: Minimum acceptable top chunk relevance score.
+
+    Returns:
+        GuardrailResult — if passed=False, returns refusal without calling LLM.
+    """
+    if not chunks:
+        log.info("guardrails.no_context_found", query=query[:50])
+        return GuardrailResult(
+            passed=False,
+            reason=REASON_NO_CONTEXT,
+            message="I do not have enough information in the dataset to answer that question.",
+            confidence=0.0,
+        )
+
+    # Check top chunk score
+    top_chunk = chunks[0]
+    if top_chunk.score < min_score_threshold:
+        log.info(
+            "guardrails.low_relevance_shortcircuit",
+            top_score=f"{top_chunk.score:.5f}",
+            threshold=min_score_threshold,
+            query=query[:50],
+        )
+        return GuardrailResult(
+            passed=False,
+            reason=REASON_LOW_RELEVANCE,
+            message="I don't have enough relevant information in the provided context to answer that question.",
+            confidence=0.0,
+        )
+
+    return GuardrailResult(passed=True, reason=None, message=None)
+
+
+# ─── 3. Post-Generation Grounding Guardrail ───────────────────────────────────
 
 def check_output(
     result: GenerationResult,
     context_chunks: List[RetrievedChunk],
+    min_grounding_overlap: float = 0.25,
 ) -> GuardrailResult:
     """
-    Post-generation guardrails on the LLM's answer.
+    Verify that generated answer is strictly grounded in retrieved chunks.
+    Detects hallucinations or claims not supported by the context.
 
     Args:
-        result:         output from `generate()`
-        context_chunks: the same chunks passed to `generate()`
+        result: GenerationResult from the LLM.
+        context_chunks: Context chunks provided to the LLM.
+        min_grounding_overlap: Minimum ratio of answer content words found in context.
 
     Returns:
-        GuardrailResult — if passed=False, the answer is suppressed.
+        GuardrailResult with safe answer or hallucination rejection.
     """
-    raise NotImplementedError("Implemented in Step 5")
+    if not result.supported:
+        return GuardrailResult(
+            passed=False,
+            reason=REASON_NO_CONTEXT,
+            message="I do not have enough information in the provided context to answer this question.",
+            answer=result.answer,
+            confidence=0.0,
+        )
+
+    answer_text = result.answer.strip()
+    if not answer_text:
+        return GuardrailResult(
+            passed=False,
+            reason=REASON_NO_CONTEXT,
+            message="No answer generated.",
+            confidence=0.0,
+        )
+
+    # If the answer is an explicit "I don't know" / refusal message
+    refusal_indicators = [
+        "not enough information",
+        "cannot answer",
+        "do not have enough information",
+        "context does not provide",
+        "context does not mention",
+        "provided context does not contain",
+    ]
+    if any(ind in answer_text.lower() for ind in refusal_indicators):
+        return GuardrailResult(
+            passed=False,
+            reason=REASON_NO_CONTEXT,
+            message=answer_text,
+            answer=answer_text,
+            confidence=0.0,
+        )
+
+    # ── Lexical & Entity Grounding Check ───────────────────────────────────────
+    # Combine all context text into one corpus
+    context_corpus = " ".join(c.text.lower() for c in context_chunks)
+    context_words = set(re.findall(r"\b[a-z0-9_-]{3,}\b", context_corpus))
+
+    # Extract substantive terms from generated answer
+    answer_words = [
+        w for w in re.findall(r"\b[a-z0-9_-]{3,}\b", answer_text.lower())
+        if w not in STOPWORDS
+    ]
+
+    if not answer_words:
+        # Short answer with only stop words or numbers
+        return GuardrailResult(passed=True, reason=None, answer=answer_text, confidence=result.confidence)
+
+    # Calculate proportion of answer keywords grounded in retrieved context
+    grounded_count = sum(1 for w in answer_words if w in context_words)
+    grounding_ratio = grounded_count / len(answer_words)
+
+    log.info(
+        "guardrails.grounding_check",
+        answer_words=len(answer_words),
+        grounded_words=grounded_count,
+        grounding_ratio=f"{grounding_ratio:.2f}",
+        threshold=min_grounding_overlap,
+    )
+
+    if grounding_ratio < min_grounding_overlap:
+        log.warning(
+            "guardrails.hallucination_detected",
+            grounding_ratio=f"{grounding_ratio:.2f}",
+            answer_preview=answer_text[:80],
+        )
+        return GuardrailResult(
+            passed=False,
+            reason=REASON_HALLUCINATION,
+            message="Generated answer failed factual grounding verification against the retrieved context.",
+            answer=None,
+            confidence=0.0,
+        )
+
+    return GuardrailResult(
+        passed=True,
+        reason=None,
+        answer=answer_text,
+        confidence=result.confidence,
+    )
