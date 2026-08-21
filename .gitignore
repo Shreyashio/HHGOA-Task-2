@@ -1,0 +1,60 @@
+# ─── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ─── Env / Secrets ────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# ─── Vector DB ────────────────────────────────────────────────────
+chroma_db/
+*.sqlite3
+
+# ─── Models / Data ────────────────────────────────────────────────
+*.bin
+*.pt
+*.safetensors
+data/raw/
+data/processed/
+.cache/
+
+# ─── Node ─────────────────────────────────────────────────────────
+node_modules/
+dist/
+.next/
+.nuxt/
+.output/
+frontend/dist/
+frontend/.vite/
+
+# ─── OS ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── Logs ─────────────────────────────────────────────────────────
+*.log
+logs/
