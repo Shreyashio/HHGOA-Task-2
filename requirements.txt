@@ -1,0 +1,35 @@
+# FastAPI core
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+httpx==0.27.0
+python-dotenv==1.0.1
+pydantic==2.7.4
+pydantic-settings==2.3.4
+
+# Vector DB (ChromaDB — local, zero-infra)
+chromadb==0.5.3
+
+# Embeddings
+sentence-transformers==3.0.1
+
+# HuggingFace dataset access
+datasets==2.20.0
+
+# NLP / chunking helpers
+nltk==3.8.1
+spacy==3.7.5
+tiktoken==0.7.0
+
+# LLM
+anthropic>=0.40.0       # Claude (Anthropic SDK)
+openai==1.35.7          # used for OpenAI-compatible endpoint (Groq / OpenAI)
+groq==0.9.0             # Groq SDK (fast inference, free tier)
+
+# Reranking
+rank-bm25==0.2.2
+
+# Utilities
+tenacity==8.4.1         # retries / orchestration harness
+structlog==24.2.0       # structured logging
+numpy==1.26.4
