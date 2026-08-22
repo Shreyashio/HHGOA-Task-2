@@ -323,7 +323,8 @@ class PipelineOrchestrator:
         t0 = time.perf_counter()
         if candidates:
             try:
-                reranked_chunks, rerank_ms = rerank(
+                reranked_chunks, rerank_ms = await asyncio.to_thread(
+                    rerank,
                     query=query,
                     candidates=candidates,
                     top_k=settings.TOP_K_FINAL,
