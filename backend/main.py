@@ -66,11 +66,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — accept all dev origins
-cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+# CORS — allow local dev + Vercel deployment + any extra origins from settings
+_FIXED_ORIGINS = [
+    "http://localhost:5173",
+    "https://frontend-git-main-rshreyash784-4013s-projects.vercel.app",
+]
+_extra_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+cors_origins = list(dict.fromkeys(_FIXED_ORIGINS + _extra_origins))  # dedup, preserve order
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins or ["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
