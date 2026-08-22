@@ -295,7 +295,8 @@ class PipelineOrchestrator:
         t0 = time.perf_counter()
         chosen_strategy = strategy or settings.CHUNKING_STRATEGY
         try:
-            candidates, retrieve_ms = retrieve(
+            candidates, retrieve_ms = await asyncio.to_thread(
+                retrieve,
                 query=query,
                 top_k=settings.TOP_K_RETRIEVE,
                 strategy_filter=chosen_strategy if chosen_strategy != "all" else None,
